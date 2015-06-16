@@ -375,7 +375,7 @@ NSString * const KILabelLinkKey = @"link";
 
     if (self.linkDetectionTypes & KILinkTypeOptionUserHandle)
     {
-        [rangesForLinks addObjectsFromArray:[self getRangesForUserHandles:text.string]];
+        [rangesForLinks addObjectsFromArray:[self getRangesForUserHandles:text]];
     }
 
     if (self.linkDetectionTypes & KILinkTypeOptionHashtag)
@@ -391,32 +391,18 @@ NSString * const KILabelLinkKey = @"link";
     return rangesForLinks;
 }
 
-- (NSArray *)getRangesForUserHandles:(NSString *)text
+- (NSArray *)getRangesForUserHandles:(NSAttributedString *)text
 {
     NSMutableArray *rangesForUserHandles = [[NSMutableArray alloc] init];
 
-    NSMutableCharacterSet* charset = [[ NSMutableCharacterSet alloc] init];
-    [charset formUnionWithCharacterSet: [NSCharacterSet whitespaceAndNewlineCharacterSet]];
-    [charset formUnionWithCharacterSet: [NSCharacterSet punctuationCharacterSet]];
-
-    unsigned long offset = 0;
-    for (NSString* component in [text componentsSeparatedByString:@"@"]) {
-        NSString* token = [[component componentsSeparatedByCharactersInSet:charset] firstObject];
-
-        if (token) {
-            if (offset != 0) {
-                unsigned long lengthWithSeparator = [token length] + 1;
-                NSRange range = NSMakeRange(offset - 1, lengthWithSeparator);
-                [rangesForUserHandles addObject:@{KILabelLinkTypeKey : @(KILinkTypeUserHandle),
-                                                  KILabelRangeKey : [NSValue valueWithRange: range],
-                                                  KILabelLinkKey : token
-                                                  }];
-            }
+    [text enumerateAttribute:NSForegroundColorAttributeName inRange:NSMakeRange(0, [text length]) options:0 usingBlock:^(id value, NSRange range, BOOL *stop) {
+        if (value) {
+            [rangesForUserHandles addObject:@{KILabelLinkTypeKey : @(KILinkTypeUserHandle),
+                                              KILabelRangeKey : [NSValue valueWithRange: range],
+                                              KILabelLinkKey : [[text string] substringWithRange:range]
+                                              }];
         }
-
-        offset += 1;
-        offset += [component length];
-    }
+    }];
 
     return rangesForUserHandles;
 }
